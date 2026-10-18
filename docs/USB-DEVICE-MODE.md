@@ -85,3 +85,33 @@ Dial `*#*#CODE#*#*`:
 | `83782` | secondary menu |
 | `837866` / `837868` | sub-menus |
 | `33284`, `1688`, `759`, `0000` | other entries |
+
+## The vendor USB gate (where the "route" actually lives)
+
+- **Developer options route:** the toggle **"Debug mode when USB is connected"**
+  (Developer options → Debugging). Stock AOSP; already enabled here (`adb_enabled=1`).
+- **Vendor gate (DoFun CarSetting):** `CarSetting → Factory` (password `123456`),
+  which is `fragment/aa`. Inside it:
+  - a **USB interface / "smart switch USB port"** control (`fragment/aa$5`) — the
+    intended device-mode route. It issues `rwrite … otg_role usb_device`.
+  - **"Force USB1.1"** (`fragment/r`, title `f_usb11_title`) → `rwrite
+    /sys/bus/platform/drivers/dwc_otg/udcspeed <0|1>` — link **speed**, not role.
+  - The "smart switch USB port" string is `recorder_kuowo` — it's tied to the
+    DVR/dashcam USB-interface selection ("Please select the USB interface",
+    `cd_usb0/1/2`); "activating this switch will affect other USB device connections".
+
+### Why the vendor gate is a no-op on this unit
+
+The USB switch writes to **Type-C** role nodes:
+```
+/sys/bus/platform/devices/usbc0/otg_role    usb_device
+/sys/bus/platform/devices/usbc0.2/otg_role  usb_device
+/sys/bus/platform/devices/10.usbc0/otg_role usb_...
+```
+None of those exist on this board — it's the older **musb OTG** (`musb-hdrc.1.auto`),
+not a Type-C `usbc0` controller. The `rwrite` (a `toolbox` symlink) write lands
+nowhere. So the gate is present in the menu but has no effect on this musb variant;
+it's built for the Type-C version of the radio.
+
+**Net unchanged:** USB-device ADB to a PC still isn't reachable on this unit without
+root. Wireless ADB remains the channel.
