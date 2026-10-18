@@ -76,3 +76,19 @@ defaults below are live.
 
 These are standard DoFun/ThunderSoft factory defaults, documented across head-unit
 forums — not a personal secret.
+
+## USB device-mode (ADB over USB) — investigated, not reachable without root
+
+Full writeup: [docs/USB-DEVICE-MODE.md](docs/USB-DEVICE-MODE.md).
+
+Short version: this is the older **musb OTG** controller (`musb-hdrc.1.auto`), fixed
+in **host** role (`mode=a_suspend`); the USB HAL reports `can_change_mode=false`.
+No host/device toggle exists in Developer options, EngineerMode, or CarSetting for
+this board (CarSetting's switch targets Type-C `usbc0/otg_role`, which doesn't exist
+here). The role file is `root:root` and there's no root (`user` build, no `su`,
+`adb root` refused; SELinux is Permissive but DAC still blocks). **CarSetting runs as
+uid 1000 (system)** and its Factory menu has an on-device "Adb shell" box — useful,
+but system ≠ root, so it can't flip the role either. **Use wireless ADB.**
+
+EngineerMode entry codes (no password): `*#*#83781#*#*` (main), also 83782, 837866,
+837868, 33284, 1688, 759, 0000.
