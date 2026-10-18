@@ -59,3 +59,20 @@ units with this ROM base.)
   the WiFi Direct/PdaNet link the launcher holds.
 - Boot is heavy: load average ~10 for the first several minutes. WiFi link showed
   ~10% ping loss / zeroed `/proc/net/wireless` quality early after boot.
+
+## CONFIRMED: CarSetting factory / lock passwords
+
+The DoFun CarSetting app (`com.dofun.carsetting`) gates its Factory and lock
+screens with a password. These are **hardcoded defaults** in its `PasswordFragment`
+(`fragment/s.smali`); an override, if ever set, is stored in
+`/sdcard/.Tcfg/password.cfg`. On this unit that file does **not** exist, so the
+defaults below are live.
+
+| Dialog / lock | Internal key | Password |
+|---|---|---|
+| **Factory** | `FACTORY_LOCK` | **`123456`** |
+| User lock | `USER_LOCK` | `8888` |
+| Reset Factory | `RESET_FACTORY` | `7890` |
+
+These are standard DoFun/ThunderSoft factory defaults, documented across head-unit
+forums — not a personal secret.
