@@ -179,3 +179,67 @@ Useful as a general probe on this hardware:
 | SysRq responds | kernel + `usbhid`, and sysrq not yet disabled by init |
 | **Caps Lock toggles** | **`system_server` is running** |
 | Keys reach apps | fully booted |
+
+## Pre-existing defect: the NPU HAL crash-loops permanently
+
+Found during the deep check, 2026-10-21. **Not related to the boot loop**, but
+it is a real fault on this unit and worth having written down.
+
+```
+/vendor/bin/hw/android.hardware.neuralnetworks@1.3-service-xtensa
+signal 6 (SIGABRT)
+Abort message: 'Check failed: totalCores != 0 '
+```
+
+Restarting every ~5 seconds. **288 crashes in 24 minutes of uptime**, and
+counting. `init.svc.neuralnetworks_hal_service_xtensa` is permanently
+`[restarting]`, and init has flagged it:
+
+```
+[sys.init.updatable_crashing]: 1
+[sys.init.updatable_crashing_process_name]: neuralnetworks_hal_service_xtensa
+```
+
+### Why it is not the boot loop
+
+**It is doing this right now while the unit is up and stable.** If it caused a
+reboot, the unit would be looping in front of us.
+
+The reason it cannot is in its own init file,
+`/vendor/etc/init/android.hardware.neuralnetworks@1.3-service-xtensa.rc`:
+
+```
+service neuralnetworks_hal_service_xtensa /vendor/bin/hw/android.hardware.neuralnetworks@1.3-service-xtensa
+    class hal
+    user system
+    group system
+```
+
+No `critical` flag. In Android init only a `critical` service triggers a device
+reboot after repeated crashes; everything else is restarted indefinitely.
+`sys.init.updatable_crashing` is init *noting* the loop, not acting on it.
+
+### What causes it
+
+The Xtensa NPU HAL asks the driver for the available core count, gets **zero**,
+and aborts on its own assertion. That is a vendor image shipping a
+neural-processing HAL for silicon this board does not have enabled — routine on
+these units, where a generic Unisoc vendor build lands on a reduced-feature
+board. This unit is the **4+32G** variant; the NPU is one of the parts that is
+not there.
+
+### Not ours
+
+`/vendor/bin/hw` is an unmodified vendor binary. The transcript audit across 307
+files found **no writes outside `/data`** on any unit, ever — nothing to
+`/vendor`, `/system_tw`, or `/sdcard/.Tcfg`. This has been happening since the
+unit was new.
+
+### What it costs
+
+Continuous process churn: a fork, a crash, a dump and a restart every five
+seconds, forever. It is a visible contributor to the load average of ~9 that
+this unit carries, which the README already records as "boot is heavy".
+
+Harmless to correctness, wasteful in practice, and not fixable without a vendor
+image that omits the HAL.
