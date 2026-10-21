@@ -284,3 +284,22 @@ Two consequences:
    Package-internal integrity data proves the file is self-consistent, not that
    it is the image Topway built. Prefer the reseller or Topway, quoting the
    label above; treat the mirror copy as unverified until something confirms it.
+
+### Is the firmware we found the *right* firmware?
+
+Asked because of the TS18-vs-TS10 brick warning. Answered in three levels:
+
+| Level | Status | Reasoning |
+|---|---|---|
+| **SoC line** | **Correct** | The brick warning is about UIS8581A (TS18) vs UIS7862A (TS10). This unit reports `uis7862a_1h10_Natv`. `TS10S` is the UIS7862A line. |
+| **Build** | **Exact match** | The QR label's build string is `TS10S.2.1_20240928.091908`; the file is `TS10S.2.1_20240928.091908_OS-EN.zip`. Character for character, the version the unit was already running. |
+| **Variant options** | **Unverified** | The label also carries `MIPI/AHD/770`, `DSP32107/QD`, `360`, `TS10S 432 1FT` — panel interface, camera type, DSP part, feature codes. `_OS-EN` is a general English regional build; whether it carries this option set is not something the filename establishes. |
+
+**The trap to avoid:** this board's silkscreen reads `TS18/TS10M-A125M-V16`,
+because the PCB is shared across both product lines. The SoM and the firmware
+are what differ. Identifying by silkscreen is how a unit ends up with TS18
+firmware on TS10 silicon. **Identify by the build string, never by the PCB
+marking.**
+
+Only the reseller or Topway can close the variant-level gap, quoting the full
+label.
