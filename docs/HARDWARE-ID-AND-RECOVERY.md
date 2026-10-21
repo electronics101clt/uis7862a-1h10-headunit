@@ -303,3 +303,36 @@ marking.**
 
 Only the reseller or Topway can close the variant-level gap, quoting the full
 label.
+
+### Searching the label codes — what came back
+
+Run 2026-10-21 against the label fields themselves.
+
+| Field | Result |
+|---|---|
+| `AW4C-0432-47`, `AW4B-0432-4A` | **Nothing public.** Internal ODM board codes; not indexed by the community. Only the reseller or the ODM maps them. |
+| `DSP32107` | Decodes to the **BU32107** DSP (ROHM) — the part behind these units' 13-band EQ and time alignment. A *hardware spec* field, not a firmware selector. |
+| `MIPI/AHD/770` | Likewise hardware: panel interface and camera input type. |
+| `TS10S.2.1_<date>_OS-EN` | The TS10S line publishes **one build per date**, not one per option set. |
+
+This lowers the variant-level risk recorded above: because the label's extra
+fields describe hardware rather than select a firmware build,
+`TS10S.2.1_20240928.091908_OS-EN` is most likely simply the build this unit
+shipped with.
+
+### Better source than the mirror
+
+**DoFun runs its own firmware channel: `https://t.me/dofun_app`** — described as
+"T3L, T5Q, TS6, TS7, TS8, TS10, TS18 Platform Head Unit Fireware update files
+share". DoFun is the vendor behind `com.dofun.carsetting` on this unit, so this
+is the nearest thing to a manufacturer channel. Individual firmware requests go
+to **`@dofunapp`**; give them the label block from the top of this document.
+
+Prefer this over lnx.pausacafeone.it, which publishes no checksum.
+
+### Dead end, recorded so it is not retried
+
+`mkotyk/topwaytool` (GitHub) verifies and recomputes checksums on `system.img`
+and de/encrypts `boot.img`/`vendor.img` — but it targets the **Allwinner T8**
+platform, not Unisoc, and works on loose images rather than packaged zips. It
+cannot validate our firmware package.
