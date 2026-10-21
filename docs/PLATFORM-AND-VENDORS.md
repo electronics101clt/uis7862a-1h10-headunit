@@ -298,3 +298,24 @@ would have:
 If John (or whoever holds the key) gets looped in because that is who handles it,
 good - but let them route it. Keep the name as back-pocket context; lead with the
 capability.
+
+### When to raise John: after the deal is moving, not before
+
+The name is a matter of timing, not secrecy:
+
+- **First contact / negotiation:** do not mention John. Ask for the capability
+  (signed image / engineering build + signing). Naming an engineer you found by
+  decompiling a cert, to a sales contact who does not know you, reads as
+  surveillance and costs trust.
+- **After a rebrand is agreed and a plan is in the works:** now you are working
+  *with* their team, and the signing/engineering function has to be involved to
+  deliver an AVB-relaxed image and platform signing. At that point John (or
+  whoever currently holds that key and role) surfaces naturally - and asking
+  "who handles signing on your side?" is an ordinary project question, not
+  detective work.
+
+So the order is: **commercial agreement first, then poll for who owns signing.**
+By then the name is context you already hold, and raising it - "our units are
+signed CN=John; is that the contact for the signing side?" - lands as someone
+who knows the platform, not someone who has been digging. Same fact, opposite
+reception, decided entirely by when it is said.
