@@ -3,6 +3,40 @@
 Written 2026-10-21, after the unit came back. Supersedes the speculation in
 `FACTORY-RESET-POSTMORTEM.md`, which is kept for the record.
 
+## What happened, in order
+
+A compressed account of the whole episode, from the reset to the revival. The
+sections below carry the evidence for each claim.
+
+| # | Event |
+|---|---|
+| 1 | Claude located the reset screen on the unit and named **`com.android.settings/.Settings$FactoryResetActivity`** - the AOSP one. Its attempt to launch it was **denied by the owner**. The vendor's gated path (CarSetting Factory, PIN `123456`, reset `7890`) was already recorded in this repo's `README.md` two days earlier and was never mentioned. |
+| 2 | The owner performed the reset **by hand**, through that AOSP screen. |
+| 3 | The reset did not wipe anything. It wrote a command into the **`misc`** partition and rebooted - which is all an Android factory reset does. |
+| 4 | The bootloader read that command and jumped to recovery to carry out the wipe. **Recovery could not complete it.** The command is only cleared on success, so it stayed. |
+| 5 | Every boot from then on: bootloader reads `misc` -> jumps to recovery -> fails -> resets. **~7 seconds, indefinitely.** The ROM splash appeared; the animated boot animation never did. |
+| 6 | The unit was unreachable for roughly a day. adb is wireless-only here and the network stack never started. A USB keyboard never enumerated. Nothing above the kernel was ever alive. |
+| 7 | Diagnosis went through three wrong answers - missing HOME, a dangling accessibility row, a half-wiped `/data` - each ruled out in turn by the splash timing and by the community's documentation of this exact failure. |
+| 8 | The board was photographed and identified: **AW4C-0432-47 / AW4B-0432-4A, TS10S.2.1_20240928.091908, 4+32G, 13.3-inch**. A `GND/KEY0/TX/RX` debug header was found, and `KEY1` was identified on the harness. |
+| 9 | The owner grounded **KEY1** at power-on. The bootloader entered flash mode, found no USB stick, printed **"USB FAT32 init failed"**, and fell through to a normal boot. |
+| 10 | **The unit came up on ZOS with every byte of user data intact** - the pre-reset menu, apps and settings exactly as they were. No firmware was written. The failed flash attempt is what fixed it, because entering flash mode consumed the stuck command. |
+| 11 | A full read-only audit found no dangling component references, no device owner, HOME resolving with two fallbacks behind it, and 16 GB free. |
+| 12 | The owner rebooted deliberately. It came back clean: **`bootreason: reboot,userrequested`**, where the previous boot had been `recovery`. |
+
+### What this cost, and what it did not
+
+**It did not cost any data.** `/data` was never wiped - 247 package directories
+survive, and ZOS's `firstInstallTime` predates the incident.
+
+**It was not caused by ZOS.** The unit boots normally with ZOS installed,
+enabled and set as HOME, with zero crashes attributable to it across two boots.
+
+**It was caused by using the wrong reset path**, which the TS10 community
+documents as producing exactly this boot loop - and the right path was already
+written down in this repository before it happened.
+
+---
+
 ## What fixed it
 
 KEY1 grounded at power-on. The unit entered the bootloader's flash mode, looked
