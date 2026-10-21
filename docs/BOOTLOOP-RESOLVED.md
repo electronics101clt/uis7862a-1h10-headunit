@@ -243,3 +243,61 @@ this unit carries, which the README already records as "boot is heavy".
 
 Harmless to correctness, wasteful in practice, and not fixable without a vendor
 image that omits the HAL.
+
+## Post-reboot audit, 2026-10-21 — the question settled
+
+The owner rebooted the unit deliberately. It came back normally. That reboot,
+and the state afterwards, settles whether the loop was caused by ZOS or by the
+factory reset.
+
+### The reboot itself
+
+| Property | Before (recovered boot) | After (deliberate reboot) |
+|---|---|---|
+| `ro.boot.bootreason` | `recovery` | **`reboot,userrequested`** |
+| `ro.boot.slot_suffix` | `_a` | `_a` |
+| `ro.boot.verifiedbootstate` | `green` | `green` |
+
+The bootloader is no longer being diverted to recovery. The pending command in
+`misc` is gone, and a normal reboot now does what a normal reboot should.
+
+### No wipe ever executed
+
+| Evidence | Value |
+|---|---|
+| `/data` | created 2024-09-27 21:45 — never recreated |
+| `/data/misc` | same stamp — untouched |
+| `/data/data` | **247 package directories present** |
+| `com.zscreen.zos` `firstInstallTime` | 2024-09-27 22:31 — predates the incident |
+| ZOS data directory | present, never removed |
+
+A completed factory reset recreates `/data` and removes every package
+directory; `firstInstallTime` would have reset with it. None of that happened.
+
+**Caveat on the dates:** this unit's RTC falls back to 2024-09-27 when it boots
+without network time (the same reason a photograph of the recovered unit showed
+"Friday 27 September"). The timestamps are unreliable as calendar dates but
+reliable as relative evidence — they are the original provisioning stamp, not a
+fresh one.
+
+So the reset was **written and pending, never performed**. The unit spent the
+entire outage obeying an instruction that recovery could not carry out.
+
+### ZOS is clean across both boots
+
+- Zero `com.zscreen.zos` entries in the crash buffer.
+- Zero `system_server` crashes.
+- The only crashing process is the vendor NPU HAL — 49 aborts in the first 4
+  minutes after reboot, identical `Check failed: totalCores != 0`, exactly as
+  before. Pre-existing, `class hal` and not `critical`, so it cannot reboot the
+  device.
+
+### Verdict
+
+**The boot loop was the factory reset, not ZOS.** The unit boots normally with
+ZOS installed, enabled and set as HOME, twice in a row, with no crash
+attributable to it.
+
+ZOS remains a suspect for the *other* unit, which looped while its APK was being
+replaced — a different failure, a different mechanism (see the accessibility
+re-pin), and unproven without logs from that unit.
