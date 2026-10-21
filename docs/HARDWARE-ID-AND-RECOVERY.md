@@ -13,6 +13,20 @@ QR label on the board, transcribed:
 YM*E1208*12.AW4C-0432-47*TS18/TS10M-A125M-V16/V1.0/AW4B-0432-4A/TS10S.2.1_20240928.091908*00499
 ```
 
+Blue chassis label, on the case interior beside the FFC breakout:
+
+```
+AC TS10S 7708 4+32G 13.3 FJ HW
+```
+
+`TS10S` platform, **4 GB RAM / 32 GB storage**, **13.3-inch** panel. `AC`,
+`7708`, `FJ` and `HW` are unresolved config/variant codes.
+
+Worth noting: most TS10 units discussed publicly are 6+128. This is the
+lower-spec build, and the 13.3-inch panel is a specific screen-parameter
+configuration - relevant because the vendor changelog tracks resolution support
+per release.
+
 Silver label, printed:
 
 ```
@@ -29,6 +43,9 @@ TS10S 432 1FT / MIPI/AHD/770 / DSP32107/QD / YA00499
 | Firmware | **TS10S.2.1_20240928.091908** |
 | Unit serial | `00499` / `YA00499`, build date `V20241119003` |
 | Display / camera | MIPI panel, AHD camera input |
+| **Chassis label** | **`AC TS10S 7708 4+32G 13.3 FJ HW`** |
+| **RAM / storage** | **4 GB + 32 GB** |
+| **Panel size** | **13.3 inch** |
 | Audio | DSP32107 + YD1821B amplifier |
 | Bluetooth | Realtek RTL8761BTV |
 
