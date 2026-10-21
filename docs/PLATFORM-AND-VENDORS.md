@@ -127,3 +127,43 @@ The owner's Linux workstation was swept for the published indicators -
 systemd user units, autostart entries and cron. **Nothing found.** The only APKs
 on the machine are the owner's own ZOS rollback files. The malware is Android
 ARM code and cannot execute on an x86 Linux desktop in any case.
+
+### The same thing happens to anyone who ships firmware
+
+`john@tw-desktop` is structurally identical to this machine's own prompt:
+
+```
+john@tw-desktop                    a TopWay build box
+jonathan@jonathan-MacBookPro12-1   this workstation, Ubuntu 24.04.3
+```
+
+Both are shell prompts. The only difference is what the hostname was derived
+from: this machine was installed under the username `jonathan`, so Ubuntu
+generated `jonathan-<hardware model>`; that one was installed under `tw`, the
+company abbreviation, so the older installer generated `tw-desktop`. One machine
+belongs to a person, the other belonged to a company before it belonged to
+whoever sat at it.
+
+**What that means for shipping our own units.** AOSP stamps the build machine
+into every ROM it produces:
+
+```
+ro.build.user     the username that ran the build
+ro.build.host     the hostname of the machine
+```
+
+If ZOS ever ships preinstalled in a vendor image, whatever account and machine
+compiled it is published in that image, on every unit, permanently - exactly as
+`john@tw-desktop` was. So:
+
+1. **Build from a purpose-named machine and account**, not a personal laptop.
+   `zscreen-build` beats `jonathan-MacBookPro12-1` on every unit sold.
+2. **Never put a real string in a placeholder.** The password in this platform's
+   Settings app is a developer's own shell prompt, typed because it was on
+   screen. It is now a universal credential across five hardware generations and
+   a decade of firmware, and the person who typed it had no say in that.
+3. **Audit for hardcoded constants before handing an image to a vendor** - the
+   firmware outlives the decision.
+
+The lesson is not about one engineer. It is that anything left in a shipped
+image is permanent, public, and attributable.
