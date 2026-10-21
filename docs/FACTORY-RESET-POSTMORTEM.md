@@ -189,24 +189,31 @@ actual fault: not that the AOSP screen was launched — the owner denied that ca
 and performed the reset by hand — but that it was the only screen named, while
 the correct one sat in our own notes.
 
-## 2. The boot stops below Android entirely
+## 2. The boot stops in early init, below the Android framework
 
-Observed cycle time from splash to restart: **1–3 seconds**. The unit shows the
-ROM splash and **never reaches an animated boot animation**.
+Observed: the ROM splash lasts about **7 seconds**, then the unit restarts. It
+**never reaches an animated boot animation**.
+
+(An earlier draft of this addendum recorded 1-3 seconds and concluded the fault
+was at the bootloader. That timing was wrong. At 7 seconds the bootloader has
+handed off successfully - so AVB passed and the boot images verify - the kernel
+has run, and the failure is in **early init**.)
 
 `bootanimation` is a userspace service started once SurfaceFlinger is up, well
 before `system_server` completes. Never seeing it means nothing in the Android
-framework ever runs — no launcher, no HOME resolution, no accessibility service.
+framework ever runs - no launcher, no HOME resolution, no accessibility service.
 
 This **rules out candidates 1 and 2 of the original ranking** on their own terms:
 
 - A missing HOME yields a booted system with no launcher, not a splash hang.
-- A dangling accessibility row crashes `system_server` — and the boot animation
+- A dangling accessibility row crashes `system_server` - and the boot animation
   would be looping on screen while it did.
 
-A 1–3 second cycle is also far too short for an init mount or decrypt timeout,
-which takes tens of seconds. The failure is at the bootloader or immediately
-after kernel handoff.
+What fits a ~7 second cycle is **init failing on `/data`**: the AOSP reset
+formatted the partition in a way this vendor ROM will not accept - wrong
+encryption policy, or missing the vendor-seeded structure its init expects - so
+the mount or prepare step fails fast and init reboots. That is consistent with
+finding 1: it is the specific damage the vendor's gated reset exists to avoid.
 
 ## 3. Consequences for recovery
 
@@ -215,14 +222,14 @@ Everything that operates above the failure point is unavailable:
 | Route | Status |
 |---|---|
 | adb | Dead. Wireless-only on this unit, and the network stack never starts. |
-| USB keyboard / SysRq | Dead. USB host cannot enumerate in 1–3 seconds; no `usbhid`, no input device. The Alt+PrtScn+`i` trick is in any case documented for **Astar_d7 / Android 6**, not for UIS7862. |
+| USB keyboard / SysRq | Effectively dead. USB host may just manage to enumerate within ~7s, but Android's `init.rc` writes `/proc/sys/kernel/sysrq 0`, closing the SysRq window as init runs; no Caps Lock response was observed. The Alt+PrtScn+`i` trick is in any case documented for **Astar_d7 / Android 6**, not for UIS7862. |
 | Recovery menu navigation | Requires input the unit cannot accept. |
-| `/data` wipe from recovery | Would not address a bootloader-level fault. |
+| `/data` wipe from recovery | **Would address the fault** - but requires input the unit cannot accept. |
 
 What remains is the one lever that runs *below* everything else: **KEY1 to
 ground with a prepared USB stick in USB1**, read by the bootloader off a GPIO
-before USB, the kernel, or init exist. The bootloader is demonstrably alive —
-it is painting the splash.
+before USB, the kernel, or init exist. The bootloader is demonstrably alive and
+healthy - it paints the splash and successfully hands off to the kernel.
 
 The platform's documented repair for this exact state is *System Upgrade →
 System Local Upgrade → **"wipe data and format flash"** → USB*, ~6 minutes, then
