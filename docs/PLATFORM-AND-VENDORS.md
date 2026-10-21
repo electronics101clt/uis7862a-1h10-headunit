@@ -265,3 +265,36 @@ than `CHECK`-aborting. A one-line guard on a variant that ships without the NPU.
 
 That is a concrete, credible thing to raise with TopWay - it shows you actually
 run their firmware deeply - without any need to identify or track down a person.
+
+## Ask for the capability, not for John
+
+John's **role** is exactly the one that gates the own-image plan: the two things
+needed - an engineering image with AVB relaxed, and platform signing (or the key
+to self-sign) - both sit with whoever owns the signing key and the ROM. That is
+John's function. So the capability you need lives where John sits.
+
+But **do not ask for him by name**, for three reasons:
+
+1. **"John" is a work alias on a cert, not a routable contact.** Keys outlive
+   people. No guarantee the person behind that CN is still there, still signs, or
+   goes by John in a sales thread.
+2. **It reads as surveillance.** Arriving at a commercial conversation naming an
+   engineer you identified by decompiling their certificate makes a vendor wary,
+   not helpful - it signals you reverse-engineer their internals, the opposite of
+   the trust required when asking for signing access.
+3. **You do not need him specifically.** You need the *deliverable* - a signed
+   image, or an engineering build plus signing. Any capable vendor engineer
+   provides that; it is not one person's gift.
+
+**The move:** ask for the capability through the commercial door, and let the
+one sentence that proves you understand their signing do the work the name
+would have:
+
+> "For the custom units - would you provide a signed system image with our
+> launcher, or an engineering build plus signing so we can sign our own app?
+> Our current units are platform-signed with your key, not AOSP test-keys, so we
+> can't self-sign without you."
+
+If John (or whoever holds the key) gets looped in because that is who handles it,
+good - but let them route it. Keep the name as back-pocket context; lead with the
+capability.
