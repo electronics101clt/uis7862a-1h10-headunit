@@ -167,3 +167,58 @@ compiled it is published in that image, on every unit, permanently - exactly as
 
 The lesson is not about one engineer. It is that anything left in a shipped
 image is permanent, public, and attributable.
+
+## "John" - the settled reading
+
+Combining the public deep-research pass with the certificate read off this unit,
+the most defensible account:
+
+- **John is a work name, not a mystery.** `CN=John, O=TW, L=Shenzhen,
+  ST=Guangdong` on the ROM's platform signing cert. Export-facing Chinese firms
+  routinely have engineers adopt a Western given name for overseas business, so
+  "John" is almost certainly a Shenzhen engineer's work alias - on the key that
+  signs TopWay's firmware. The cert's location fields match TopWay's actual
+  location (Shenzhen, Guangdong), which is what a genuine self-generated signing
+  key looks like.
+
+- **The cert ships on every unit.** Every `/system_tw` system app is signed with
+  that key, so the certificate is embedded in every APK, on every TopWay unit
+  worldwide. It is a build byproduct, not anything specific to this unit.
+
+- **A public-records search finds no person**, and that is consistent rather than
+  contradictory: a work alias on a signing cert leaves no LinkedIn/GitHub/press
+  trail. (An independent deep-research pass reached "not a real person / default
+  credential, high confidence" - correct on web evidence; it simply could not
+  see the cert, which is in the firmware, not online.)
+
+- **`tw-desktop` is a dead address, not an attack surface.** It was an Ubuntu
+  build machine's hostname at some point (installer default under a `tw`
+  account), almost certainly long since renamed, reimaged or retired. The
+  hostname was only ever local to that build box - it never pointed anywhere
+  routable. There is nothing to SSH to; the string is a fossil that got promoted
+  from a machine name to a password constant.
+
+**Net:** "John" is a real engineer behind TopWay's signing, reachable through no
+public channel. Worth keeping in mind only as context if the name surfaces
+naturally in a vendor conversation - not something to pursue or act on.
+
+## Starting the brand-customization conversation (DoFun Telegram)
+
+The commercial route, through `@dofunapp`. Lead with the unit codes, ask the
+gating questions, and do not send ZOS (source or APK) in first contact - find
+out whether they even need it first. The MOQ answer decides everything: if it is
+hundreds of units, the plan shifts to buying stock units and installing ZOS at
+the bay instead.
+
+Questions that gate the deal:
+1. Minimum order quantity for brand customization.
+2. Can they build an image with the launcher preinstalled as a system app, plus
+   boot animation and app selection.
+3. Would they platform-sign the app, or provide what is needed to self-sign
+   (this unit's platform key is TopWay's own, **not** the AOSP test-key - see
+   `BUILDING-YOUR-OWN-IMAGE.md`, so self-signing needs their cooperation).
+4. Which hardware models - currently TS10S / UIS7862A, 13.3",
+   AW4C-0432-47 / AW4B-0432-4A, build TS10S.2.1_20240928.091908.
+5. Per-unit price at MOQ and lead time.
+
+Leave John out of the opener - it reads as odd to a sales contact.
