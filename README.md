@@ -12,7 +12,7 @@ Device-specific working notes for the Android car head unit reporting itself as
 | ABI | arm64-v8a |
 | Serial | `D244817163514186` |
 | SoC vendor | Unisoc / Spreadtrum (`com.unisoc.*`, `vendor/sprd`, SoC `uis7862a`) |
-| ROM base | ThunderSoft ("tw" — `/system_tw`) |
+| ROM base | **TopWay** ("tw" — `/system_tw`, `com.tw.*`). See `docs/PLATFORM-AND-VENDORS.md`; an earlier revision of this file attributed `tw` to ThunderSoft, which is not supported by evidence. |
 | Car skin | DoFun (`com.dofun.carsetting`) |
 | Launcher (HOME) | `app.lawnchair` (Lawnchair); stock `com.android.launcher` also present |
 | Notable apps | `com.zjinnova.zlink`, `com.zscreen.wifisettings` |
@@ -31,7 +31,7 @@ Toggling **USB debugging** in Developer options pops a vendor password `EditText
 before the stock "Allow USB debugging?" dialog. This gate is **not AOSP** — Google
 does not password-protect USB debugging (entry to Developer options asks at most for
 the existing lock-screen credential; USB debugging itself is gated by RSA key
-authorization, not a password). It is a ThunderSoft addition baked into the vendor
+authorization, not a password). It is a vendor (TopWay) addition baked into the vendor
 Settings app.
 
 **Password:** `john@tw-desktop`
@@ -49,7 +49,7 @@ const-string p2, "john@tw-desktop"
 invoke-virtual {p2, p1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
 ```
 
-(Matches the known ThunderSoft "john @ tw-desktop" USB-debug password seen on other
+(Matches the known "john@tw-desktop" USB-debug password seen on other
 units with this ROM base.)
 
 ## Gotchas
@@ -74,7 +74,7 @@ defaults below are live.
 | User lock | `USER_LOCK` | `8888` |
 | Reset Factory | `RESET_FACTORY` | `7890` |
 
-These are standard DoFun/ThunderSoft factory defaults, documented across head-unit
+These are standard DoFun/TopWay factory defaults, documented across head-unit
 forums — not a personal secret.
 
 ## USB device-mode (ADB over USB) — investigated, not reachable without root
