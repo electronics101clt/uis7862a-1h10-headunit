@@ -115,3 +115,67 @@ screen.
    and KEY-GND are on the steering-wheel control wires of the main harness.
 3. A failed flash attempt is a legitimate repair: entering flash mode clears a
    stuck `misc` command even when no firmware is written.
+
+## Full boot-safety audit, 2026-10-21
+
+Read-only over adb, with the unit up for 21 minutes. The question answered here
+is narrow: **is there anything on this unit that would stop it booting again?**
+
+The mechanism that matters is a **dangling component reference** — a secure
+setting naming a component whose package is missing or disabled. That is the
+classic way to crash-loop `system_server` at boot. Every such setting was
+checked, and every component it names resolves to a package that is installed
+and not disabled.
+
+| Setting | Names | Status |
+|---|---|---|
+| `enabled_accessibility_services` | `com.samiadom.Shutdown/...accessService`, `com.zscreen.zos/...ZosAccessibilityService` | both installed, neither disabled |
+| `default_input_method` | `com.android.inputmethod.latin/.LatinIME` | installed |
+| `enabled_input_methods` | latin + `com.google.android.googlequicksearchbox` | both installed |
+| `assistant` | `com.google.android.apps.actionsservice/...MainActivity` | installed |
+| `voice_recognition_service` | googlequicksearchbox | installed |
+| `selected_spell_checker` | latin spellcheck | installed |
+| wallpaper | `com.android.systemui/ImageWallpaper` | built-in |
+| `enabled_notification_listeners` | *(null)* | nothing to dangle |
+| `enabled_notification_assistant` | *(null)* | nothing to dangle |
+| `autofill_service` | *(empty)* | nothing to dangle |
+| `voice_interaction_service` | *(empty)* | nothing to dangle |
+| device owner / profile owner | **none set** | no `dpm` state |
+
+Other boot-relevant state:
+
+| Check | Value |
+|---|---|
+| HOME resolves to | `com.zscreen.zos.StartActivity` (installed, enabled) |
+| HOME fallbacks present | `com.android.launcher2.Launcher`, `com.android.settings.FallbackHome` |
+| `/data` free | 16 GB of 21 GB (23% used) |
+| `ro.boot.verifiedbootstate` | `green` |
+| `ro.boot.flash.locked` | `1` |
+| `ro.boot.slot_suffix` | `_a` |
+| `ro.boot.bootreason` | `recovery` — records how *this* boot was entered (KEY1 flash-mode path), not a pending instruction |
+| Disabled packages | `com.google.android.ims`, `com.sprd.powersavemodelauncher`, `com.dofun.carassistant.car` — none referenced by any setting above |
+| Crash buffer | One vendor NPU service, `android.hardware.neuralnetworks@1.3-service-xtensa`, aborting at startup. The ROM's own, unrelated to anything installed, and the unit runs with it. |
+
+**Verdict: safe to reboot.** No dangling references, no device owner, HOME
+resolves and has fallbacks behind it, disk is not full, and `misc` holds no
+pending command — proven by the fact that this boot reached Android at all.
+
+### Caps Lock as a boot-stage probe
+
+With the unit fully booted, a USB keyboard's **Caps Lock LED now lights**.
+During the boot loop it did not.
+
+That LED is set by `InputReader` inside `system_server`, not by the kernel. So
+its silence during the loop means `system_server` never started — confirming
+independently that the unit was dying in **early init**, before the Android
+framework. It also means the USB-keyboard recovery trick was never going to
+work here: nothing above the kernel was alive to receive a keystroke.
+
+Useful as a general probe on this hardware:
+
+| Keyboard behaviour | Boot reached |
+|---|---|
+| LEDs flicker on plug-in | USB power only |
+| SysRq responds | kernel + `usbhid`, and sysrq not yet disabled by init |
+| **Caps Lock toggles** | **`system_server` is running** |
+| Keys reach apps | fully booted |
