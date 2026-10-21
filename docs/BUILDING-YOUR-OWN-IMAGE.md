@@ -110,3 +110,80 @@ blocked at the root step, not the partition step.
 is recoverable. Anything that touches `misc`, the bootloader, or an AVB-verified
 image is where units die. Stay on the first side of that line without a vendor
 engineering image in hand.
+
+## Measured on this unit, 2026-10-21
+
+Read-only `getprop` and a signing-cert read. These settle which locks are real
+for TopWay specifically.
+
+### Platform signing key - TopWay's own, NOT the public AOSP test-key
+
+Read off `com.tw.service` (a `/system_tw/priv-app` system app):
+
+```
+Owner:  CN=John, OU=Android, O=TW, L=Shenzhen, ST=Guangdong, C=CN
+SHA256: AA:6F:9F:B3:07:05:12:AC:96:24:25:79:7C:D6:5A:A5:85:CF:62:02:93:7E:E3:CE:EF:B1:4B:58:02:EA:BD:F3
+```
+
+This is **not** the AOSP test-key (`CN=Android, O=Android`). It is a private
+TopWay (`O=TW`) key. **Consequence: platform-signing ZOS on this ROM requires
+TopWay's key, which only they hold.** The no-vendor-cooperation route that works
+on the Jancar does not transfer here - the Jancar accepted a key we had; TopWay
+would not.
+
+Note the cert common name is **`John`**. The same name that appears in the
+`john@tw-desktop` USB-debug password is on the certificate that signs the entire
+ROM. That ties the name to TopWay's signing infrastructure rather than to one
+stray constant - "John" is associated with platform signing at TW, Shenzhen.
+It is still only a label: a certificate CN carries no surname, no contact, and
+no proof of current role.
+
+### Build machine - a different account than John
+
+```
+ro.build.user  ph
+ro.build.host  ubuntu
+ro.build.fingerprint  UNISOC/uis7862a_1h10_Natv/uis7862a_1h10:12/SP1A.210812.016/39609:user/release-keys
+ro.build.tags  release-keys
+```
+
+The image was **compiled by user `ph` on a host named `ubuntu`** - not `john`,
+not `tw-desktop`. So signing and building are separate roles here: John's key
+signs, someone else's machine builds. This also answers the earlier open
+question - the build host does **not** name John.
+
+### GMS - present, working, NOT certified
+
+```
+ro.com.google.gmsversion  12_202110
+com.android.vending       /data/app/... (sideloaded, not system)
+com.google.android.gms    /data/app/... (sideloaded, not system)
+settings secure play_store_version  null
+```
+
+Play Store and Play services are installed as **`/data` apps**, not baked into
+the system image, and the device is not Play-certified (`play_store_version`
+null; this is the leaked-GMS pattern universal to these units). **Play works;
+Play is not certified.** Netflix L1, banking apps and Android Auto certification
+depend on the certified path and will not pass here.
+
+**Google certification is not retrofittable by an integrator.** It requires
+passing CTS on the device and a GMS licence granted by Google to OEMs with
+volume. A reflash-and-rebrand operation does not qualify. The honest brand
+position is "works and is locally supported," not "Google certified."
+
+### Net: the TopWay production path needs the vendor
+
+| Want | On this unit |
+|---|---|
+| ZOS as a platform-signed system app | **Needs TopWay's platform key** - not self-signable here |
+| A writable scanned partition (Jancar method) | Needs root first (`user` build, no su without a Magisk flash) |
+| Self-built bootable image | Needs AVB relaxed / bootloader unlocked - vendor engineering image only |
+| Certified Google services | Not achievable by an integrator at all |
+| Kernel source | Owed under GPLv2 - ask |
+
+So unlike the Jancar, TopWay cannot be done entirely from the outside. The
+realistic route is a **commercial relationship that yields an engineering image
+(AVB relaxed) plus the platform key for signing** - which is exactly what the
+DoFun "brand customization" channel is for. Everything short of that stays on
+the recoverable side of the brick line in the table above.
