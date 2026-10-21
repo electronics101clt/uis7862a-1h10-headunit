@@ -234,7 +234,10 @@ Refining the above with tonight's build props. Three strings, three fossils:
 | `ro.build.user` / `ro.build.host` | `ph` / `ubuntu` | a **different** machine compiled the release |
 
 So John is the **developer and signer**, not the person who runs the compile
-(`ph` does). His prompt froze into the Settings APK he wrote; his key signs the
+(`ph` does). Both `tw-desktop` and `ph`'s `ubuntu` box are **internal TopWay
+machines** - developer and build workstations behind the company's walls, never
+public hosts. Your unit simply carries their fingerprints in three different
+places. His prompt froze into the Settings APK he wrote; his key signs the
 release; someone else assembles it. All inference from strings, but the three
 are consistent.
 
