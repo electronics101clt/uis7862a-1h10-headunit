@@ -155,3 +155,85 @@ What is left, cheapest first:
    reset, and that is worth knowing *before* resetting it rather than after.
 4. **Record what HOME was before changing it**, so a reset or a rollback has a
    named target instead of a guess.
+
+---
+
+# Addendum, 2026-10-21: the cause is no longer unproven
+
+Everything above this line was written before the board was photographed, the
+boot behaviour was timed, and the platform's own documentation was found. Three
+findings supersede the ranking above.
+
+## 1. The AOSP reset path is a known brick on this platform
+
+The reset was performed through **`com.android.settings/.Settings$FactoryResetActivity`**
+— AOSP's reset screen inside ThunderSoft's modified Settings. This is **not**
+the vendor's reset. The vendor's is a different app: `com.dofun.carsetting`,
+reached as *Settings → Factory → PIN `123456` → reset code `7890`*.
+
+The TS10 community states the distinction explicitly:
+
+> "Try factory reset from the settings menu, **NOT Android reset**. This is an
+> important distinction." … "don't use the reset factory option inside *More*."
+
+And records the consequence of getting it wrong as exactly this unit's symptom:
+a boot loop stuck at the **Powered by Android** screen.
+
+**This supersedes candidates 1, 2 and 3 above.** It is not an inference from
+what we did; it is a documented failure mode of the specific action taken.
+
+**And the gated path was already written down in this repo** — `README.md`
+recorded `FACTORY_LOCK 123456` / `RESET_FACTORY 7890` two days before the reset.
+It was never mentioned when the reset screen was being located. That is the
+actual fault: not that the AOSP screen was launched — the owner denied that call
+and performed the reset by hand — but that it was the only screen named, while
+the correct one sat in our own notes.
+
+## 2. The boot stops below Android entirely
+
+Observed cycle time from splash to restart: **1–3 seconds**. The unit shows the
+ROM splash and **never reaches an animated boot animation**.
+
+`bootanimation` is a userspace service started once SurfaceFlinger is up, well
+before `system_server` completes. Never seeing it means nothing in the Android
+framework ever runs — no launcher, no HOME resolution, no accessibility service.
+
+This **rules out candidates 1 and 2 of the original ranking** on their own terms:
+
+- A missing HOME yields a booted system with no launcher, not a splash hang.
+- A dangling accessibility row crashes `system_server` — and the boot animation
+  would be looping on screen while it did.
+
+A 1–3 second cycle is also far too short for an init mount or decrypt timeout,
+which takes tens of seconds. The failure is at the bootloader or immediately
+after kernel handoff.
+
+## 3. Consequences for recovery
+
+Everything that operates above the failure point is unavailable:
+
+| Route | Status |
+|---|---|
+| adb | Dead. Wireless-only on this unit, and the network stack never starts. |
+| USB keyboard / SysRq | Dead. USB host cannot enumerate in 1–3 seconds; no `usbhid`, no input device. The Alt+PrtScn+`i` trick is in any case documented for **Astar_d7 / Android 6**, not for UIS7862. |
+| Recovery menu navigation | Requires input the unit cannot accept. |
+| `/data` wipe from recovery | Would not address a bootloader-level fault. |
+
+What remains is the one lever that runs *below* everything else: **KEY1 to
+ground with a prepared USB stick in USB1**, read by the bootloader off a GPIO
+before USB, the kernel, or init exist. The bootloader is demonstrably alive —
+it is painting the splash.
+
+The platform's documented repair for this exact state is *System Upgrade →
+System Local Upgrade → **"wipe data and format flash"** → USB*, ~6 minutes, then
+roughly a minute of auto-initialisation on first boot. On a unit that will not
+boot, the bootloader-driven force-flash is the same operation. **Use the variant
+that formats data** — a plain image update leaves the mangled partition in place.
+
+## Corrections to the body above
+
+- "The cause here is **unproven**" — no longer true; see finding 1.
+- The recovery section's "USB is not a route in" holds **for adb only**. The
+  unit reading a stick is a different mechanism and is the working route.
+- `docs/HARDWARE-ID-AND-RECOVERY.md` carries the board identity, the pad map,
+  the firmware, and the procedure.
