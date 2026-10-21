@@ -335,3 +335,41 @@ attributable to it.
 ZOS remains a suspect for the *other* unit, which looped while its APK was being
 replaced — a different failure, a different mechanism (see the accessibility
 re-pin), and unproven without logs from that unit.
+
+## The firmware that was staged (and why it was never flashed)
+
+Before the unit was recovered by KEY1, the plan was a USB force-flash. The exact
+build for this unit was located, downloaded and verified:
+
+- File: `TS10S.2.1_20240928.091908_OS-EN.zip` (1.95 GB)
+- Stock:  `https://lnx.pausacafeone.it/car_tablet/topway_ts10_firmware/TS10S.2.1_OS-EN/TS10S.2.1_20240928.091908_OS-EN.zip`
+- Rooted: same path, `..._OS-EN_root.zip`
+- Index:  `https://lnx.pausacafeone.it/wordpress/2022/12/09/topway-ts10-ts18-firmware/` (archive password reported `TopwayTS10`)
+- Verified: `unzip -t` clean; `sha256 b8b1f658c8b29c1c84a03788160ac3bf23ee39eb4595deae51053e7d67b497c7`
+- Community mirror, **no vendor checksum** - see the updater-hijack advisory in
+  `PLATFORM-AND-VENDORS.md`. A checksummed image from DoFun is preferred.
+
+It was never flashed. KEY1 recovered the unit with all data intact, so the flash
+became unnecessary - the file is kept only as a fallback.
+
+## Open question: could ZOS still be implicated?
+
+The large screen's loop is attributed to the AOSP factory reset (stuck `misc`
+command), and the post-reboot audit found no wipe occurred and no ZOS crash.
+That is strong, but it is **not a root-cause proof**, and the limits are honest:
+
+- **No root on this unit.** It is a `user` build; `adb root` is refused and
+  there is no `su` without a Magisk flash. The deepest logs (early-init, the
+  `misc` contents at the time, kernel dmesg across the loop) could not be read.
+- **No UART.** The `GND/TX/RX` debug pads were identified but never connected;
+  no serial console capture of the actual boot failure exists.
+- **No JTAG.** No hardware debug rig, so no way to observe the bootloader's read
+  of `misc` directly.
+
+So the account rests on **inference from what was observable over adb after the
+fact** (intact `/data`, the `recovery` then `reboot,userrequested` bootreasons,
+no dangling component), plus the community's documentation that the AOSP reset
+path bricks these units this way. That is a well-supported conclusion, not a
+logged one. If the other unit's install-time loop is ever reproduced with a UART
+attached, the ZOS accessibility-pin mechanism could be confirmed or ruled out
+directly - which this unit's constraints did not allow.
