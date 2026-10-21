@@ -222,3 +222,43 @@ Questions that gate the deal:
 5. Per-unit price at MOQ and lead time.
 
 Leave John out of the opener - it reads as odd to a sales contact.
+
+## John the developer vs the build machine - and a bug report for him
+
+Refining the above with tonight's build props. Three strings, three fossils:
+
+| Artifact | Reads | Fossilises |
+|---|---|---|
+| USB-debug password (Settings APK) | `john@tw-desktop` | the machine **John coded on** |
+| Platform signing cert | `CN=John, O=TW, Shenzhen` | **John holds the signing key** |
+| `ro.build.user` / `ro.build.host` | `ph` / `ubuntu` | a **different** machine compiled the release |
+
+So John is the **developer and signer**, not the person who runs the compile
+(`ph` does). His prompt froze into the Settings APK he wrote; his key signs the
+release; someone else assembles it. All inference from strings, but the three
+are consistent.
+
+### If the name ever comes up with the vendor: a real bug to report
+
+Not detective work - an actual defect in firmware John's key signs, that a
+support/engineering contact would recognise as legitimate:
+
+**The NPU HAL crash-loops forever on this build.**
+
+```
+/vendor/bin/hw/android.hardware.neuralnetworks@1.3-service-xtensa
+signal 6 (SIGABRT)
+Abort message: 'Check failed: totalCores != 0 '
+```
+
+Observed restarting every ~5 seconds, hundreds of times per boot, on
+`TS10S.2.1_20240928.091908` / build `39609`. The HAL asks the driver for the NPU
+core count, gets zero (this 4+32G board has no enabled NPU), and aborts on its
+own assertion instead of exiting cleanly. It is `class hal`, not `critical`, so
+it does not brick - but it burns a fork/crash/restart cycle every 5 seconds
+forever and is a visible contributor to the ~9 load average. The fix is trivial:
+the HAL should return "0 devices / not supported" when `totalCores == 0` rather
+than `CHECK`-aborting. A one-line guard on a variant that ships without the NPU.
+
+That is a concrete, credible thing to raise with TopWay - it shows you actually
+run their firmware deeply - without any need to identify or track down a person.
