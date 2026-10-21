@@ -319,3 +319,47 @@ By then the name is context you already hold, and raising it - "our units are
 signed CN=John; is that the contact for the signing side?" - lands as someone
 who knows the platform, not someone who has been digging. Same fact, opposite
 reception, decided entirely by when it is said.
+
+## What to get from the vendor: the AC/HVAC panel interface
+
+The channel appears open to reselling units (per the Telegram exchange), so the
+technical ask to pin down - alongside signing and MOQ - is **how the climate
+(AC/HVAC) panel is driven**, because that is what has to keep working under a
+rebrand and is what a custom MCU has to speak to.
+
+### Why it matters
+
+On this unit the climate bar is live on the launcher (A/C, fan, AUTO, dual
+temperature knobs, seen running at 11.4 V). That panel is the **vehicle's HVAC
+surfaced on the head unit**, and it does not go over Android APIs - it rides the
+**MCU serial link**. On this ROM that is the `gocsdk` bridge
+(`/system_tw/bin/gocsdk /dev/ttyS0 500000`) with its `goc_control` / `goc_data`
+sockets - the MCU is where climate, CAN/canbus, steering-wheel keys, reverse
+trigger and ACC live, and Android talks to it through that bridge.
+
+So controlling climate = speaking the MCU's serial protocol. Two directions this
+can go, and the vendor conversation should cover both:
+
+1. **Use my own MCU.** I need the **protocol/framing of the MCU serial link**
+   (baud is 500000, but the command set, the canbus decode tables, and the
+   per-vehicle config format are the vendor's) so my MCU can present the same
+   messages the head unit already expects. Without that, a custom MCU can power
+   and display but cannot drive climate or read canbus.
+2. **Use their MCU.** If they sell the MCU board as part of the unit, I need to
+   know it stays supported under a rebranded image, and that the `gocsdk` bridge
+   (or its equivalent) ships in whatever image they build for me - otherwise the
+   climate bar goes dark on a custom ROM.
+
+### The concrete asks for the vendor (add to the outreach)
+
+- Is the **MCU serial protocol** documented / available to brand partners, so a
+  custom MCU can drive climate, canbus, steering-wheel keys and reverse?
+- If I use **your MCU**, does the custom image keep the MCU bridge (`gocsdk` or
+  equivalent) and the per-vehicle canbus configs?
+- Is the **canbus decode / vehicle-selection database** part of what ships, and
+  can it be extended for vehicles I target?
+
+This is the piece that decides whether a ZScreen-branded unit is a full climate+
+canbus head unit or just a screen. It is engineering-side (where John's function
+sits), so it is a natural thing to raise once a resale/rebrand is agreed - not in
+first contact.
