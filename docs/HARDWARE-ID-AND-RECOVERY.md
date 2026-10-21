@@ -184,3 +184,103 @@ the reading is inferred rather than certain.
 - **No external USB port** in frame, only the breakout pads above.
 - The board is in its frame throughout, so the outer edges and the reverse are
   unphotographed.
+
+## What each pad group is for
+
+Function assignments are read from the silkscreen plus standard practice for
+this class of board. The four in the first table are the ones that matter for
+getting back in.
+
+### The ones that matter
+
+| Pads | What it is | Why we care |
+|---|---|---|
+| `GND · KEY0 · TX · RX` | Debug UART, with a boot-mode key line in the same column | The console. Says whether `system_server` is crash-looping or the bootloader never hands off — which is the question the post-mortem could not answer. `KEY0` grounded at power-on pushes the chip down an alternate boot path. |
+| `KEY1` (KEY group) | Front-panel button input #1 | **The force-flash trigger.** Ground at power-on per the USB update procedure above. |
+| `RST` (several locations) | Reset | A reset that does not need the chassis pinhole. The one in the KEY group is the front-panel reset. |
+| `DP · DN · 5V · GND` | A USB port broken out to pads | A second tap on a USB bus, independent of the external port that `USB-DEVICE-MODE.md` found host-fixed. |
+
+### Display and backlight
+
+- `12V · PWM · ADJ · GND` — backlight driver input: boost supply, digital (PWM)
+  dimming, analog (ADJ) dimming, ground.
+- `LED+ · LED-` — driver output to the panel's LED string.
+- `1V8 · RST · STB` — panel bridge: 1.8V rail test point, reset, standby.
+  **This is the board's evidence that 1.8V logic is present** — the reason to
+  measure before connecting anything to TX.
+- `TFT` ×2 — panel data connectors.
+
+### Touch
+
+- `5V · SCL · SDA · EN · RST` — capacitive touch controller: power, I²C pair,
+  enable, reset.
+- At the `TP` connector: `RST · VDD · INT · SDA · SCL` — same bus at the
+  connector; `INT` is the controller's interrupt to the host.
+
+### Front panel and audio
+
+- `MIC+ · MIC-` — differential mic input; appears both standalone and in the
+  KEY group.
+- `ENC_A · ENC_C` — rotary encoder channels (the volume knob).
+- `KEY2` — second button input, sibling of `KEY1`.
+- `5V` / `GND` — panel assembly rails.
+
+### Programming / service
+
+- `GND · 3.3V · SDA · CLK · RST` (top edge, 5 plated holes) — `SDA`+`CLK`+`RST`
+  at 3.3V reads as an **I²C programming header**, most likely for factory
+  programming of the panel MCU or an EEPROM. Not a UART, not SWD.
+
+### Power and unresolved
+
+- `+12V`, `5V`, `GND` — rail probe points.
+- `GND · VCI1 · DP · DK` — round test points by the USB breakout. `DP`
+  duplicates the square pad; `VCI1` is a rail. **`DK` is uncertain** — possibly
+  `DM` with the silkscreen partly lost, which would make it the pair's other half.
+
+### Probing rule
+
+Measure `TX` idle voltage before connecting anything; a confirmed 1.8V rail
+exists on this board. Grounding `KEY1` is safe — it is a button input designed
+to be pulled low. Shorting an unidentified point is not.
+
+## Routes that do not involve flashing
+
+Preferred over the USB force-flash, because none of them writes an image.
+
+1. **Stock recovery, then recovery's own wipe.** Reset pinhole or key combo at
+   power-on. Recovery's "wipe data / factory reset" is a *clean* wipe performed
+   outside the running system, which is exactly what kills candidate 2 — a
+   dangling `ENABLED_ACCESSIBILITY_SERVICES` row naming a package that is gone,
+   as a partial wipe would have left. Cheapest thing that could actually fix it.
+2. **adb from inside recovery.** ThunderSoft recoveries often start `adbd`. If
+   this one does, the unit enumerates on USB *in recovery* despite Android's
+   USB being host-fixed — different stack, different gadget config. That gives a
+   way to mount `/data` and delete the offending rows surgically instead of
+   wiping anything.
+3. **Safe mode.** Boot without third-party apps. Useless if `system_server`
+   itself is crashing; works if the loop is a launcher or app crash. Free to try.
+4. **The UART**, read-only, as the diagnostic that says which of the three
+   candidates is real before any lever is pulled.
+
+## What the updater verifies — and what it does not
+
+Relevant to whether a wrong or tampered image is dangerous. This is from the
+community's observed behaviour, **not** from reading the updater binary.
+
+| Stage | Checked? | Consequence |
+|---|---|---|
+| Package integrity, pre-write | **Yes**, probably — packages of this type carry their own integrity data | A truncated or corrupted download normally aborts instead of writing |
+| Hardware/SoC compatibility, pre-write | **No** | This is precisely why "TS18 firmware on a TS10 is a permanent brick" is a standing warning. A working gate would refuse the package and nothing would brick. Assume the updater will write any structurally valid package handed to it. |
+| Signature, post-write | **Yes** — AVB, `verifiedbootstate=green`, `flash.locked=1` | An unsigned or tampered image fails *at the next boot*. This is a trap, not a safeguard: you discover it by owning a unit that no longer starts. |
+
+Two consequences:
+
+1. Matching the exact build matters more here than on a platform with real
+   pre-flash validation. Use the label: `TS10S`, `AW4C-0432-47`,
+   `AW4B-0432-4A`, build `20240928.091908`.
+2. **The mirror hosting our firmware publishes no checksum or signature.**
+   lnx.pausacafeone.it is a community archive, not Topway and not the reseller.
+   Package-internal integrity data proves the file is self-consistent, not that
+   it is the image Topway built. Prefer the reseller or Topway, quoting the
+   label above; treat the mirror copy as unverified until something confirms it.
