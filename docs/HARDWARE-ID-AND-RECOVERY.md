@@ -54,8 +54,9 @@ TX before connecting anything** — this board carries a `1V8` rail and Unisoc
 consoles are commonly 1.8V, not 3.3V. 115200 8N1.
 
 A separate USB breakout sits bottom-right: flat pads `DP · DN · 5V · GND`, plus
-test points `GND`, `VCI1`, `DP`, `DK`. Note this is a *different* tap from the
-external port that `USB-DEVICE-MODE.md` found to be host-fixed.
+test points `GND`, `VCI1`, `DP`, `DK`. **This is not a way in** — see the pad
+table below. It is a port option, on what is most likely the same host-fixed
+bus.
 
 Also present, on the panel board near the KEY FFC: pads `KEY1`, `KEY2`, `RST`,
 `ENC_A`, `ENC_C`, `5V`. **`KEY1` is the pad the force-flash procedure below
@@ -198,7 +199,7 @@ getting back in.
 | `GND · KEY0 · TX · RX` | Debug UART, with a boot-mode key line in the same column | The console. Says whether `system_server` is crash-looping or the bootloader never hands off — which is the question the post-mortem could not answer. `KEY0` grounded at power-on pushes the chip down an alternate boot path. |
 | `KEY1` (KEY group) | Front-panel button input #1 | **The force-flash trigger.** Ground at power-on per the USB update procedure above. |
 | `RST` (several locations) | Reset | A reset that does not need the chassis pinhole. The one in the KEY group is the front-panel reset. |
-| `DP · DN · 5V · GND` | A USB port broken out to pads | A second tap on a USB bus, independent of the external port that `USB-DEVICE-MODE.md` found host-fixed. |
+| `DP · DN · 5V · GND` | A USB port broken out to pads | **Not a route in.** Earlier text here called this "independent of the external port" — that was asserted without evidence. Being on the panel board does not make it a different controller; most likely it is the same musb bus brought out as a solder-pad port option, and therefore just as host-fixed. The updater does not use it either: the stick goes into the harness USB1 lead. |
 
 ### Display and backlight
 
@@ -336,3 +337,22 @@ Prefer this over lnx.pausacafeone.it, which publishes no checksum.
 and de/encrypts `boot.img`/`vendor.img` — but it targets the **Allwinner T8**
 platform, not Unisoc, and works on loose images rather than packaged zips. It
 cannot validate our firmware package.
+
+## Correction to the post-mortem's recovery section
+
+`FACTORY-RESET-POSTMORTEM.md` ranks recovery options as "cheapest first" with
+SPD/BROM marked unverified, and says USB is not a route in. Two things have
+changed since it was written:
+
+1. **A documented recovery route now exists** — the KEY1/USB force-flash above.
+   It is standard practice on this platform, needs no PC and no SPD tool, and
+   supersedes the post-mortem's framing that nothing reachable had been found.
+2. **Everything it needs is on the harness**, not inside the unit: `KEY1` and
+   `KEY-GND` on the steering-wheel control wires, USB1 on the `E1-E4` lead,
+   power on B+/ACC/GND, and the reset pinhole on the back of the case beside
+   the internal microphone. The unit does **not** need to be opened.
+
+The post-mortem's statement that USB is not a route in remains true *for adb* —
+the musb controller is host-fixed, so the unit cannot present as a USB device to
+a PC. That is a separate matter from the unit *reading* a stick, which is what
+the force-flash does.
